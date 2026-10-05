@@ -156,6 +156,39 @@
       padding: 12px;
     }
 
+    .example-panel {
+      width: min(100%, 760px);
+      margin: 18px auto 0;
+      padding: 16px;
+    }
+
+    .example-panel h2 {
+      margin: 0 0 4px;
+      font-size: 1.05rem;
+    }
+
+    .example-description {
+      margin: 0;
+      color: #526079;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .example-panel canvas {
+      height: 220px;
+      min-height: 220px;
+    }
+
+    .chart-caption {
+      margin: 4px 8px 0;
+      color: #26344d;
+      font-size: 0.9rem;
+      font-weight: 650;
+      line-height: 1.5;
+      text-align: center;
+    }
+
     .history-panel {
       margin-top: 18px;
     }
@@ -318,9 +351,18 @@
       <canvas id="chart" role="img" aria-label="Girilen koordinatların nokta grafiği"></canvas>
     </section>
 
+    <section class="panel example-panel" aria-label="Keçi sayısı ve et üretimi örnek grafiği">
+      <h2>Örnek grafik</h2>
+      <p class="example-description">X: Et için yetiştirilen keçi sayısı · Y: Keçi eti üretim miktarı (ton)</p>
+      <canvas id="example-chart" role="img" aria-label="Et için yetiştirilen keçi sayısı ile keçi eti üretim miktarı arasındaki ilişkiyi gösteren örnek grafik"></canvas>
+      <p class="chart-caption">Örnek: Et için yetiştirilen keçi sayısı ile elde edilen keçi eti miktarı arasındaki ilişki</p>
+      <p class="correlation-result" id="example-correlation" aria-live="polite">Korelasyon Katsayısı=Hesaplanıyor...</p>
+      <p class="correlation-result" id="example-correlation-strength" aria-live="polite">İlişkinin Gücü=Hesaplanıyor...</p>
+    </section>
+
     <section class="panel history-panel" aria-label="İşlem ve grafik geçmişi">
       <h2>İşlem ve Grafik Geçmişi</h2>
-      <p class="history-empty" id="history-empty">Henüz grafik geçmişi yok. Bir grafik oluşturduğunuzda burada görünecek.</p>
+      <p class="history-empty" id="history-empty">Bu sayfa açıkken oluşturduğunuz grafikler burada görünür. Sayfa yeniden açıldığında geçmiş sıfırlanır ve diğer ziyaretçilerle paylaşılmaz.</p>
       <div class="history-list" id="history-list"></div>
       <button class="history-reset" id="history-reset" type="button" hidden>Geçmişi sıfırla</button>
     </section>
@@ -331,13 +373,15 @@
     const button = document.querySelector("#draw-button");
     const status = document.querySelector("#status");
     const canvas = document.querySelector("#chart");
-    const context = canvas.getContext("2d");
+    const exampleCanvas = document.querySelector("#example-chart");
     const excludedCount = document.querySelector("#excluded-count");
     const correlationResult = document.querySelector("#correlation-result");
     const correlationStrength = document.querySelector("#correlation-strength");
     const historyList = document.querySelector("#history-list");
     const historyEmpty = document.querySelector("#history-empty");
     const historyReset = document.querySelector("#history-reset");
+    const exampleCorrelation = document.querySelector("#example-correlation");
+    const exampleCorrelationStrength = document.querySelector("#example-correlation-strength");
     let historyCount = 0;
     const zoneCountElements = {
       z1: document.querySelector("#z1-count"),
@@ -372,6 +416,45 @@
       return { points, invalid };
     }
 
+    function calculateCorrelation(points) {
+      if (points.length < 2) {
+        return null;
+      }
+
+      const meanX = points.reduce((sum, point) => sum + point.x, 0) / points.length;
+      const meanY = points.reduce((sum, point) => sum + point.y, 0) / points.length;
+      let covariance = 0;
+      let varianceX = 0;
+      let varianceY = 0;
+
+      points.forEach((point) => {
+        const differenceX = point.x - meanX;
+        const differenceY = point.y - meanY;
+        covariance += differenceX * differenceY;
+        varianceX += differenceX ** 2;
+        varianceY += differenceY ** 2;
+      });
+
+      if (varianceX === 0 || varianceY === 0) {
+        return null;
+      }
+
+      return Math.max(-1, Math.min(1, covariance / Math.sqrt(varianceX * varianceY)));
+    }
+
+    function describeCorrelationStrength(coefficient) {
+      if (Math.abs(coefficient) === 1) {
+        return `${coefficient < 0 ? "Negatif" : "Pozitif"} Mükemmel İlişki`;
+      }
+      if (coefficient === 0) {
+        return "İlişki Yok";
+      }
+      if (coefficient < 0) {
+        return coefficient <= -0.7 ? "Negatif Güçlü İlişki" : coefficient <= -0.3 ? "Negatif Orta İlişki" : "Negatif Zayıf İlişki";
+      }
+      return coefficient < 0.3 ? "Pozitif Zayıf İlişki" : coefficient < 0.7 ? "Pozitif Orta İlişki" : "Pozitif Güçlü İlişki";
+    }
+
     function niceStep(range) {
       const roughStep = range / 8;
       const magnitude = 10 ** Math.floor(Math.log10(roughStep));
@@ -380,7 +463,9 @@
       return niceFraction * magnitude;
     }
 
-    function drawChart(points) {
+    function drawChart(points, targetCanvas = canvas) {
+      const canvas = targetCanvas;
+      const context = canvas.getContext("2d");
       const bounds = canvas.getBoundingClientRect();
       const pixelRatio = window.devicePixelRatio || 1;
       canvas.width = Math.round(bounds.width * pixelRatio);
@@ -505,7 +590,9 @@
         context.font = "12px Segoe UI, Arial, sans-serif";
         context.textAlign = "left";
         context.textBaseline = "bottom";
-        context.fillText(`(${point.x}, ${point.y})`, x + 9, y - 5);
+        if (points.length <= 12) {
+          context.fillText(`(${point.x}, ${point.y})`, x + 9, y - 5);
+        }
       });
     }
 
@@ -666,9 +753,47 @@
       }
     }
 
+    const exampleData = `3135214,57537
+2977773,57707
+2889651,56820
+2837242,52460
+2801617,50492
+2748395,48906
+2755379,50712
+2706994,50254
+2487218,46240
+2244760,42846
+2391246,44840
+2841307,53133
+3273444,59532
+3681199,63711
+4097340,69757
+4346611,75322
+4346713,77794
+4392427,82839
+4513264,87126
+4692010,90443
+4907371,94555
+6112179,115938
+6753478,128989
+5117030,99532`;
+    const examplePoints = parseCoordinates(exampleData).points;
+    const exampleCoefficient = calculateCorrelation(examplePoints);
+    if (exampleCoefficient === null) {
+      exampleCorrelation.textContent = "Korelasyon Katsayısı=Hesaplanamadı";
+      exampleCorrelationStrength.textContent = "İlişkinin Gücü=Hesaplanamadı";
+    } else {
+      exampleCorrelation.textContent = `Korelasyon Katsayısı=${Number(exampleCoefficient.toFixed(6)).toString()}`;
+      exampleCorrelationStrength.textContent = `İlişkinin Gücü=${describeCorrelationStrength(exampleCoefficient)}`;
+    }
+
     button.addEventListener("click", () => render(true));
-    window.addEventListener("resize", render);
+    window.addEventListener("resize", () => {
+      render();
+      drawChart(examplePoints, exampleCanvas);
+    });
     render();
+    drawChart(examplePoints, exampleCanvas);
   </script>
 </body>
 </html>
