@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Serpme Nokta Grafiği</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #172033;
+      background: #f3f6fb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px 18px;
+    }
+
+    main {
+      width: min(100%, 1080px);
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+    }
+
+    .intro {
+      margin: 0 0 24px;
+      color: #526079;
+      line-height: 1.5;
+    }
+
+    .panel {
+      padding: 22px;
+      border: 1px solid #dce3ef;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgb(27 45 79 / 6%);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 650;
+    }
+
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 150px;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e3;
+      border-radius: 9px;
+      color: inherit;
+      font: 15px/1.6 Consolas, "Courier New", monospace;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      border-color: #3867d6;
+      outline: 3px solid rgb(56 103 214 / 15%);
+    }
+
+    .hint {
+      margin: 8px 0 14px;
+      color: #66738a;
+      font-size: 0.9rem;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 8px;
+      background: #2858c7;
+      color: #fff;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d46a5;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #9bb7ff;
+      outline-offset: 2px;
+    }
+
+    .status {
+      min-height: 24px;
+      margin: 12px 0 0;
+      color: #40506a;
+      font-size: 0.92rem;
+    }
+
+    .status.error {
+      color: #b42318;
+    }
+
+    .zones-panel {
+      margin-top: 18px;
+    }
+
+    .zones-panel h2 {
+      margin: 0 0 14px;
+      font-size: 1.1rem;
+    }
+
+    .zone-counts {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .zone-count {
+      padding: 14px;
+      border: 1px solid #dce3ef;
+      border-radius: 10px;
+      background: #f8faff;
+    }
+
+    .zone-count strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 1.05rem;
+    }
+
+    .zone-count span {
+      color: #526079;
+      font-size: 0.92rem;
+    }
+
+    .correlation-result {
+      margin: 16px 0 0;
+      font-weight: 650;
+    }
+
+    .excluded-note {
+      margin-top: 8px;
+      color: #526079;
+      font-size: 0.8rem;
+      font-weight: 400;
+      opacity: 0.65;
+    }
+
+    .chart-panel {
+      margin-top: 18px;
+      padding: 12px;
+    }
+
+    .history-panel {
+      margin-top: 18px;
+    }
+
+    .history-panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+    }
+
+    .history-empty {
+      margin: 0;
+      color: #66738a;
+    }
+
+    .history-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .history-entry {
+      min-width: 0;
+      border: 1px solid #dce3ef;
+      border-radius: 10px;
+      background: #f8faff;
+      overflow: hidden;
+    }
+
+    .history-entry summary {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 96px;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      cursor: pointer;
+      list-style-position: inside;
+    }
+
+    .history-entry summary::marker {
+      color: #2858c7;
+    }
+
+    .history-entry summary:focus-visible {
+      outline: 3px solid #9bb7ff;
+      outline-offset: -3px;
+    }
+
+    .history-summary-text {
+      min-width: 0;
+    }
+
+    .history-summary-text strong,
+    .history-summary-text time {
+      display: block;
+    }
+
+    .history-summary-text strong {
+      margin-bottom: 4px;
+      font-size: 0.95rem;
+    }
+
+    .history-summary-text time {
+      color: #66738a;
+      font-size: 0.78rem;
+    }
+
+    .history-entry p {
+      margin: 10px 14px;
+    }
+
+    .history-entry p {
+      color: #526079;
+      font-size: 0.9rem;
+    }
+
+    .history-entry pre {
+      margin: 10px 14px;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+      font: 13px/1.5 Consolas, "Courier New", monospace;
+    }
+
+    .history-entry img {
+      display: block;
+      width: calc(100% - 28px);
+      height: auto;
+      margin: 12px 14px;
+      border: 1px solid #dce3ef;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .history-thumbnail {
+      width: 96px !important;
+      height: 64px !important;
+      margin: 0 !important;
+      object-fit: cover;
+    }
+
+    .history-reset {
+      margin-top: 14px;
+      background: #596579;
+    }
+
+    .history-reset:hover {
+      background: #3f4a5c;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: min(62vh, 560px);
+      min-height: 320px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 20px 12px;
+      }
+
+      .panel {
+        padding: 16px;
+      }
+
+      .zone-counts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Serpme Nokta Grafiği</h1>
+    <p class="intro">Her satıra bir koordinat yazın. Virgülün solundaki sayı X, sağındaki sayı Y ekseninde gösterilir.</p>
+
+    <section class="panel" aria-label="Koordinat verileri">
+      <label for="coordinates">Koordinatlar</label>
+      <textarea id="coordinates" spellcheck="false" aria-describedby="input-hint">2,3
+-1,4
+4,-2</textarea>
+      <p class="hint" id="input-hint">Örnek: <code>2,3</code> → X: 2, Y: 3. Noktaları alt alta yazabilir veya Excel'den kopyalayıp yapıştırabilirsiniz.</p>
+      <button id="draw-button" type="button">Grafiği oluştur</button>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel zones-panel" aria-label="Bölgelere göre nokta sayıları">
+      <h2>Bölgelere göre nokta sayısı</h2>
+      <div class="zone-counts" aria-live="polite">
+        <div class="zone-count"><strong>Birinci Bölge</strong><span id="z1-count">0 nokta</span></div>
+        <div class="zone-count"><strong>İkinci Bölge</strong><span id="z2-count">0 nokta</span></div>
+        <div class="zone-count"><strong>Üçüncü Bölge</strong><span id="z3-count">0 nokta</span></div>
+        <div class="zone-count"><strong>Dördüncü Bölge</strong><span id="z4-count">0 nokta</span></div>
+      </div>
+      <p class="correlation-result excluded-note" id="excluded-count" aria-live="polite">Eksen üzerinde: 0 nokta (bölge hesabına dahil edilmedi)</p>
+      <p class="correlation-result" id="correlation-result" aria-live="polite">Korelasyon Katsayısı=Hesaplanamadı (geçerli nokta yok)</p>
+      <p class="correlation-result" id="correlation-strength" aria-live="polite">İlişkinin Gücü=Hesaplanamadı</p>
+    </section>
+
+    <section class="panel chart-panel" aria-label="Koordinat grafiği">
+      <canvas id="chart" role="img" aria-label="Girilen koordinatların nokta grafiği"></canvas>
+    </section>
+
+    <section class="panel history-panel" aria-label="İşlem ve grafik geçmişi">
+      <h2>İşlem ve Grafik Geçmişi</h2>
+      <p class="history-empty" id="history-empty">Henüz grafik geçmişi yok. Bir grafik oluşturduğunuzda burada görünecek.</p>
+      <div class="history-list" id="history-list"></div>
+      <button class="history-reset" id="history-reset" type="button" hidden>Geçmişi sıfırla</button>
+    </section>
+  </main>
+
+  <script>
+    const input = document.querySelector("#coordinates");
+    const button = document.querySelector("#draw-button");
+    const status = document.querySelector("#status");
+    const canvas = document.querySelector("#chart");
+    const context = canvas.getContext("2d");
+    const excludedCount = document.querySelector("#excluded-count");
+    const correlationResult = document.querySelector("#correlation-result");
+    const correlationStrength = document.querySelector("#correlation-strength");
+    const historyList = document.querySelector("#history-list");
+    const historyEmpty = document.querySelector("#history-empty");
+    const historyReset = document.querySelector("#history-reset");
+    let historyCount = 0;
+    const zoneCountElements = {
+      z1: document.querySelector("#z1-count"),
+      z2: document.querySelector("#z2-count"),
+      z3: document.querySelector("#z3-count"),
+      z4: document.querySelector("#z4-count")
+    };
+
+    function parseCoordinates(value) {
+      const points = [];
+      const invalid = [];
+      const entries = value.split(/[\r\n\t;]+/).map((entry) => entry.trim()).filter(Boolean);
+      const coordinatePattern = /^\(?\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*\)?$/;
+
+      entries.forEach((entry) => {
+        const match = entry.match(coordinatePattern);
+        if (!match) {
+          invalid.push(entry);
+          return;
+        }
+
+        const x = Number(match[1]);
+        const y = Number(match[2]);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) {
+          invalid.push(entry);
+          return;
+        }
+
+        points.push({ x, y });
+      });
+
+      return { points, invalid };
+    }
+
+    function niceStep(range) {
+      const roughStep = range / 8;
+      const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+      const fraction = roughStep / magnitude;
+      const niceFraction = fraction < 1.5 ? 1 : fraction < 3.5 ? 2 : fraction < 7.5 ? 5 : 10;
+      return niceFraction * magnitude;
+    }
+
+    function drawChart(points) {
+      const bounds = canvas.getBoundingClientRect();
+      const pixelRatio = window.devicePixelRatio || 1;
+      canvas.width = Math.round(bounds.width * pixelRatio);
+      canvas.height = Math.round(bounds.height * pixelRatio);
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+      const width = bounds.width;
+      const height = bounds.height;
+      const padding = { top: 24, right: 28, bottom: 48, left: 64 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const valuesX = points.map((point) => point.x);
+      const valuesY = points.map((point) => point.y);
+      const dataMinX = points.length ? Math.min(0, ...valuesX) : -5;
+      const dataMaxX = points.length ? Math.max(0, ...valuesX) : 5;
+      const dataMinY = points.length ? Math.min(0, ...valuesY) : -5;
+      const dataMaxY = points.length ? Math.max(0, ...valuesY) : 5;
+      const meanX = points.length ? valuesX.reduce((sum, value) => sum + value, 0) / points.length : null;
+      const meanY = points.length ? valuesY.reduce((sum, value) => sum + value, 0) / points.length : null;
+      const spanX = dataMaxX - dataMinX || 1;
+      const spanY = dataMaxY - dataMinY || 1;
+      const minX = dataMinX - spanX * 0.12;
+      const maxX = dataMaxX + spanX * 0.12;
+      const minY = dataMinY - spanY * 0.12;
+      const maxY = dataMaxY + spanY * 0.12;
+      const scaleX = plotWidth / (maxX - minX);
+      const scaleY = plotHeight / (maxY - minY);
+      const toCanvasX = (x) => padding.left + (x - minX) * scaleX;
+      const toCanvasY = (y) => height - padding.bottom - (y - minY) * scaleY;
+      const xAxisY = toCanvasY(0);
+      const yAxisX = toCanvasX(0);
+
+      context.clearRect(0, 0, width, height);
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, width, height);
+      context.font = "12px Segoe UI, Arial, sans-serif";
+      context.textAlign = "center";
+      context.textBaseline = "top";
+
+      const xStep = niceStep(maxX - minX);
+      const yStep = niceStep(maxY - minY);
+      const firstXTick = Math.ceil(minX / xStep) * xStep;
+      const firstYTick = Math.ceil(minY / yStep) * yStep;
+
+      for (let x = firstXTick; x <= maxX; x += xStep) {
+        const screenX = toCanvasX(x);
+        context.beginPath();
+        context.strokeStyle = "#e8edf5";
+        context.lineWidth = 1;
+        context.moveTo(screenX, padding.top);
+        context.lineTo(screenX, height - padding.bottom);
+        context.stroke();
+        context.fillStyle = "#66738a";
+        context.fillText(Number(x.toPrecision(6)).toString(), screenX, height - padding.bottom + 10);
+      }
+
+      context.textAlign = "right";
+      context.textBaseline = "middle";
+      for (let y = firstYTick; y <= maxY; y += yStep) {
+        const screenY = toCanvasY(y);
+        context.beginPath();
+        context.strokeStyle = "#e8edf5";
+        context.lineWidth = 1;
+        context.moveTo(padding.left, screenY);
+        context.lineTo(width - padding.right, screenY);
+        context.stroke();
+        context.fillStyle = "#66738a";
+        context.fillText(Number(y.toPrecision(6)).toString(), padding.left - 10, screenY);
+      }
+
+      context.strokeStyle = "#26344d";
+      context.lineWidth = 2;
+      context.beginPath();
+      context.moveTo(padding.left, xAxisY);
+      context.lineTo(width - padding.right, xAxisY);
+      context.moveTo(yAxisX, padding.top);
+      context.lineTo(yAxisX, height - padding.bottom);
+      context.stroke();
+
+      context.fillStyle = "#26344d";
+      context.font = "600 14px Segoe UI, Arial, sans-serif";
+      context.textAlign = "center";
+      context.textBaseline = "alphabetic";
+      context.fillText("X", width - padding.right + 12, xAxisY + 5);
+      context.fillText("Y", yAxisX, padding.top - 8);
+
+      if (points.length) {
+        const meanLineX = toCanvasX(meanX);
+        const meanLineY = toCanvasY(meanY);
+
+        context.save();
+        context.setLineDash([7, 5]);
+        context.lineWidth = 2;
+        context.strokeStyle = "#a044c2";
+        context.beginPath();
+        context.moveTo(meanLineX, padding.top);
+        context.lineTo(meanLineX, height - padding.bottom);
+        context.stroke();
+
+        context.strokeStyle = "#e07724";
+        context.beginPath();
+        context.moveTo(padding.left, meanLineY);
+        context.lineTo(width - padding.right, meanLineY);
+        context.stroke();
+        context.restore();
+        canvas.setAttribute("aria-label", `${points.length} noktalı XY grafiği. Ortalama X ve Y kılavuz çizgileri gösteriliyor.`);
+      } else {
+        canvas.setAttribute("aria-label", "Koordinat grafiği. Henüz geçerli nokta yok.");
+      }
+
+      points.forEach((point) => {
+        const x = toCanvasX(point.x);
+        const y = toCanvasY(point.y);
+        context.beginPath();
+        context.fillStyle = "#2858c7";
+        context.arc(x, y, 6, 0, Math.PI * 2);
+        context.fill();
+        context.strokeStyle = "#ffffff";
+        context.lineWidth = 2;
+        context.stroke();
+        context.fillStyle = "#172033";
+        context.font = "12px Segoe UI, Arial, sans-serif";
+        context.textAlign = "left";
+        context.textBaseline = "bottom";
+        context.fillText(`(${point.x}, ${point.y})`, x + 9, y - 5);
+      });
+    }
+
+    function updateZoneCounts(points) {
+      const counts = { z1: 0, z2: 0, z3: 0, z4: 0 };
+      let excluded = 0;
+
+      if (points.length) {
+        const meanX = points.reduce((sum, point) => sum + point.x, 0) / points.length;
+        const meanY = points.reduce((sum, point) => sum + point.y, 0) / points.length;
+
+        points.forEach((point) => {
+          const toleranceX = Number.EPSILON * Math.max(1, Math.abs(point.x), Math.abs(meanX)) * points.length;
+          const toleranceY = Number.EPSILON * Math.max(1, Math.abs(point.y), Math.abs(meanY)) * points.length;
+          const onMeanX = Math.abs(point.x - meanX) <= toleranceX;
+          const onMeanY = Math.abs(point.y - meanY) <= toleranceY;
+          if (onMeanX || onMeanY) {
+            excluded += 1;
+            return;
+          }
+
+          const right = point.x > meanX;
+          const upper = point.y > meanY;
+          const zone = upper ? (right ? "z1" : "z2") : (right ? "z4" : "z3");
+          counts[zone] += 1;
+        });
+      }
+
+      Object.entries(counts).forEach(([zone, count]) => {
+        zoneCountElements[zone].textContent = `${count} nokta`;
+      });
+      excludedCount.textContent = `Eksen üzerinde: ${excluded} nokta (bölge hesabına dahil edilmedi)`;
+
+      const countedPoints = counts.z1 + counts.z2 + counts.z3 + counts.z4;
+
+      if (points.length === 0) {
+        correlationResult.textContent = "Korelasyon Katsayısı=Hesaplanamadı (geçerli nokta yok)";
+        correlationStrength.textContent = "İlişkinin Gücü=Hesaplanamadı";
+        return;
+      }
+
+      if (countedPoints === 0) {
+        correlationResult.textContent = "Korelasyon Katsayısı=Hesaplanamadı (bölge hesabına dahil nokta yok)";
+        correlationStrength.textContent = "İlişkinin Gücü=Hesaplanamadı";
+        return;
+      }
+
+      const coefficient = (counts.z1 + counts.z3 - counts.z2 - counts.z4) / countedPoints;
+      correlationResult.textContent = `Korelasyon Katsayısı=${Number(coefficient.toFixed(6)).toString()}`;
+
+      let strength;
+      if (Math.abs(coefficient) === 1) {
+        strength = "Mükemmel";
+      } else if (coefficient === 0) {
+        strength = "İlişki Yok";
+      } else if (coefficient < 0) {
+        if (coefficient <= -0.7) {
+          strength = "Negatif Güçlü İlişki";
+        } else if (coefficient <= -0.3) {
+          strength = "Negatif Orta İlişki";
+        } else {
+          strength = "Negatif Zayıf İlişki";
+        }
+      } else if (coefficient < 0.3) {
+        strength = "Pozitif Zayıf İlişki";
+      } else if (coefficient < 0.7) {
+        strength = "Pozitif Orta İlişki";
+      } else {
+        strength = "Pozitif Güçlü İlişki";
+      }
+
+      if (Math.abs(coefficient) === 1) {
+        strength = `${coefficient < 0 ? "Negatif" : "Pozitif"} ${strength} İlişki`;
+      }
+
+      correlationStrength.textContent = `İlişkinin Gücü=${strength}`;
+    }
+
+    function addHistoryEntry(points, invalid) {
+      historyCount += 1;
+      historyEmpty.hidden = true;
+
+      const entry = document.createElement("details");
+      entry.className = "history-entry";
+
+      const timestamp = document.createElement("time");
+      timestamp.dateTime = new Date().toISOString();
+      timestamp.textContent = new Date(timestamp.dateTime).toLocaleString("tr-TR");
+
+      const chartImage = document.createElement("img");
+      chartImage.src = canvas.toDataURL("image/png");
+      chartImage.alt = `İşlem ${historyCount} sırasında oluşturulan serpme nokta grafiği`;
+      chartImage.className = "history-thumbnail";
+
+      const summary = document.createElement("summary");
+      const summaryText = document.createElement("span");
+      summaryText.className = "history-summary-text";
+      const heading = document.createElement("strong");
+      heading.textContent = `İşlem ${historyCount}`;
+      summaryText.append(heading, timestamp);
+      summary.append(summaryText, chartImage);
+      entry.append(summary);
+
+      const coordinatesLabel = document.createElement("p");
+      coordinatesLabel.textContent = "Girilen veriler:";
+      entry.append(coordinatesLabel);
+
+      const coordinates = document.createElement("pre");
+      coordinates.textContent = input.value.trim() || "Veri girilmedi.";
+      entry.append(coordinates);
+
+      const results = document.createElement("p");
+      results.textContent = `${points.length} geçerli nokta; ${excludedCount.textContent}; ${correlationResult.textContent}; ${correlationStrength.textContent}`;
+      entry.append(results);
+
+      if (invalid.length) {
+        const invalidEntries = document.createElement("p");
+        invalidEntries.textContent = `Okunamayan değerler: ${invalid.join(", ")}`;
+        entry.append(invalidEntries);
+      }
+
+      const fullChartImage = document.createElement("img");
+      fullChartImage.src = chartImage.src;
+      fullChartImage.alt = chartImage.alt;
+      entry.append(fullChartImage);
+
+      historyList.prepend(entry);
+      historyReset.hidden = false;
+    }
+
+    historyReset.addEventListener("click", () => {
+      if (!window.confirm("Tüm grafik geçmişini silmek istiyor musunuz?")) {
+        return;
+      }
+
+      historyList.replaceChildren();
+      historyCount = 0;
+      historyEmpty.hidden = false;
+      historyReset.hidden = true;
+    });
+
+    function render(saveToHistory = false) {
+      const { points, invalid } = parseCoordinates(input.value);
+      status.classList.toggle("error", invalid.length > 0 || points.length === 0);
+      updateZoneCounts(points);
+
+      if (invalid.length > 0) {
+        status.textContent = `${points.length} nokta çizildi. Okunamayan değerler: ${invalid.join(", ")}`;
+      } else if (points.length === 0) {
+        status.textContent = "Grafik oluşturmak için en az bir x,y koordinatı girin.";
+      } else {
+        status.textContent = `${points.length} nokta çizildi.`;
+      }
+
+      drawChart(points);
+      if (saveToHistory) {
+        addHistoryEntry(points, invalid);
+      }
+    }
+
+    button.addEventListener("click", () => render(true));
+    window.addEventListener("resize", render);
+    render();
+  </script>
+</body>
+</html>
